@@ -14,7 +14,8 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 const int trigPin = 4;
 const int echoPin = 5;
 long t;
-int distance, proc, x;
+int distance, proc;
+float x;
 
 
 
