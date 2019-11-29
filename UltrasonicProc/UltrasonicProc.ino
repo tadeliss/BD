@@ -13,14 +13,14 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
 const int trigPin = 4;
 const int echoPin = 5;
-long duration;
-int distance, proc;
+long t;
+int distance, proc, x;
 
 
 
 void setup() {
-pinMode(trigPin, OUTPUT);
-pinMode(echoPin, INPUT);
+  pinMode(trigPin, OUTPUT);
+  pinMode(echoPin, INPUT);
 
   Serial.begin(115200);
   
@@ -32,40 +32,47 @@ pinMode(echoPin, INPUT);
   delay(2000);
   display.setFont();
   display.clearDisplay();
-  display.setTextSize(1);
   display.setTextColor(WHITE);
-  display.setCursor(0,30);
+  
      
 }
 
 void loop() {
-display.setTextSize(2);
-display.setCursor(0,30);
-digitalWrite(trigPin, LOW);
-delayMicroseconds(2);
-digitalWrite(trigPin, HIGH);
-delayMicroseconds(10);
-digitalWrite(trigPin, LOW);
-duration = pulseIn(echoPin, HIGH);
-distance = duration*0.0344/2;
-Serial.print("Distance: ");
-Serial.println(distance); 
-
+  display.setTextSize(2); //nustatomas teksto dydis
+  display.setCursor(0,30); // nustatomas pradzios taskas
+  
+  digitalWrite(trigPin, LOW);
+  delayMicroseconds(2);
+  digitalWrite(trigPin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trigPin, LOW);
+  
+  t = pulseIn(echoPin, HIGH); // laiko paskaiciavimas uztrukto garsui atkeliauti
+  distance = t*0.0344/2; //atstumo paskaiciavimas pagal sugaista laika
+  
+  Serial.print("Distance: ");
+  Serial.println(distance); 
+  
+//*************************************** 
+//skaiciavimas procentais 
+  x =(((distance+2.5)*100)/15)-50;
+  
   if(distance <= 5) {
     proc = 100;
   } else if (distance>=20) {
     proc = 0;
+  } else{
+    proc = 100 - x;
   }
+//***************************************  
+  delay(100);
 
-delay(100);
-//display.print("Distance: ");
-//display.print(distance);
-display.print(proc);
-display.print(" %");
-display.display();
-delay(500);
-display.clearDisplay();
-delay(500);
+  display.print(proc); //isvedimas i oled
+  display.print(" %"); //isvedimas % zenkliuko
+  display.display();
+  
+  delay(100);
+  display.clearDisplay(); // isvalomas oled
   
 
 }
