@@ -1,36 +1,35 @@
+#define BLYNK_PRINT Serial
+
+#include <WiFi.h>
+#include <WiFiClient.h>
+#include <BlynkSimpleEsp32.h>
+#include <Stepper.h>
+
 
 const int dirPin = 16; //Krypties 
-const int stepPin = 17; // Žingsnio
+const int stepPin = 17; // Zingsnio
 const int ledPin = 13;
-const int touchPin = 4;
-const int threshold = 20;
-int touchValue;
+
+//Blynk atpazinimo kodas
+char auth[] = "hKeENDdhyYgTWMNzOvLqoNfpO2tLg5oR";
+
+//Wifi duomenys
+char ssid[] = "Tado apartamentai";
+char pass[] = "tadas111";
 
 void setup()
 {
+  Serial.begin(9600);
   pinMode(stepPin, OUTPUT);
   pinMode(dirPin, OUTPUT);
   pinMode(ledPin, OUTPUT);
-}
-void loop()
-{
-  touchValue = touchRead(touchPin);
-  
-  if (touchValue < threshold)
-  {
-    digitalWrite(ledPin, LOW);
-    variklis(500,150);
-    } 
-  else
-  {
-    digitalWrite(ledPin, HIGH);
-    }  
+  Blynk.begin(auth, ssid, pass);
 }
 
 //Pasukimas variklio
 void variklis(int stepsLeft, int stepsRight)
 {
-//Pasukamas i kaire puse (beriamas maistas)
+//Pasukamas i viena puse
   digitalWrite(dirPin, LOW);
   for(int x = 0; x < stepsLeft; x++)
   {
@@ -39,8 +38,8 @@ void variklis(int stepsLeft, int stepsRight)
     digitalWrite(stepPin, LOW);
     delayMicroseconds(2000);
   }
-
-//Pasukamas atgal, kad neuzstrigtu maistas  
+  
+//Pasukamas i kita puse 
   digitalWrite(dirPin, HIGH);
   for(int x = 0; x < stepsRight; x++)
   {
@@ -50,3 +49,15 @@ void variklis(int stepsLeft, int stepsRight)
     delayMicroseconds(1000);
   }
   }
+
+BLYNK_WRITE(V0)
+{
+  if(param.asInt() == 1) {
+    variklis(500, 100);
+  }
+}
+
+  void loop()
+{
+  Blynk.run(); 
+}
