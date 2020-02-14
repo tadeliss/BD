@@ -26,6 +26,8 @@ char auth[] = "hKeENDdhyYgTWMNzOvLqoNfpO2tLg5oR";
 //Wifi duomenys
 char ssid[] = "Tado apartamentai";
 char pass[] = "tadas111";
+
+BlynkTimer timer; 
 //-----------------------------------------------------------------------------
 
 void setup()
@@ -46,7 +48,12 @@ void setup()
   display.setFont();
   display.clearDisplay();
   display.setTextColor(WHITE);
-  
+  timer.setInterval(1000L, ultra);
+}
+void ultra()
+{
+  ultragarsas();
+  Blynk.virtualWrite(V5, proc);
 }
 
 
@@ -58,12 +65,17 @@ BLYNK_WRITE(V0)
   }
 }
 
+
+
+//---------------------------------------------------
   void loop()
 {
-  ultragarsas();
-  oled();
-  Blynk.run(); 
+  //ultragarsas();
+  //oled();
+  Blynk.run();
+  timer.run(); 
 }
+//---------------------------------------------------
 void oled()
 {
   display.setTextSize(2); //nustatomas teksto dydis
@@ -77,7 +89,7 @@ void oled()
   display.clearDisplay(); // isvalomas oled
   }
   
-void ultragarsas()
+int ultragarsas()
 {
   digitalWrite(trigPin, LOW);
   delayMicroseconds(2);
@@ -98,6 +110,7 @@ void ultragarsas()
   } else{
     proc = 100 - x;
   }
+  return proc;
   }
 
 //Variklio pasukimo funkcija
