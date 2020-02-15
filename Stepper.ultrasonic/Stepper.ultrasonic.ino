@@ -9,15 +9,18 @@
 #define SCREEN_WIDTH 128 // OLED plotis pikseliais
 #define SCREEN_HEIGHT 64 // OLED aukstis pikseliais
 #define OLED_RESET     4 // reset
+
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
+BlynkTimer timer;
 const int dirPin = 16; //Variklio krypties
 const int stepPin = 17; //Variklio zingsnio
 const int trigPin = 4; //Ultragarso trig 
 const int echoPin = 5; //Ultragarso echo
+const int sleepPin = 3; // miego rezimo 
 long t; //garso signalo sugaistas laikas
 int ats; //atstumas
-int proc;
+int proc; //atstumas procentais
 float x;
 
 //Blynk atpazinimo kodas
@@ -27,7 +30,7 @@ char auth[] = "hKeENDdhyYgTWMNzOvLqoNfpO2tLg5oR";
 char ssid[] = "Tado apartamentai";
 char pass[] = "tadas111";
 
-BlynkTimer timer; 
+
 //-----------------------------------------------------------------------------
 
 void setup()
@@ -36,6 +39,7 @@ void setup()
   pinMode(stepPin, OUTPUT);
   pinMode(dirPin, OUTPUT);
   pinMode(trigPin, OUTPUT);
+  pinMode(sleepPin, OUTPUT);
   pinMode(echoPin, INPUT);
   Blynk.begin(auth, ssid, pass);
   
@@ -48,14 +52,14 @@ void setup()
   display.setFont();
   display.clearDisplay();
   display.setTextColor(WHITE);
-  timer.setInterval(1000L, ultra);
+  timer.setInterval(1000L, ultragarsasBlynk);
+  digitalWrite(sleepPin, LOW);
 }
-void ultra()
+void ultragarsasBlynk()
 {
   ultragarsas();
   Blynk.virtualWrite(V5, proc);
 }
-
 
 //tikrinama ar mygtuko aplikacijoje paspaudimas = true ir paleidziama variklio funkcija
 BLYNK_WRITE(V0)
@@ -65,13 +69,11 @@ BLYNK_WRITE(V0)
   }
 }
 
-
-
 //---------------------------------------------------
   void loop()
 {
   //ultragarsas();
-  //oled();
+  oled();
   Blynk.run();
   timer.run(); 
 }
@@ -116,6 +118,8 @@ int ultragarsas()
 //Variklio pasukimo funkcija
 void variklis(int stepsLeft, int stepsRight)
 {
+  digitalWrite(sleepPin, HIGH);
+  delay(10);
 //Pasukamas i viena puse
   digitalWrite(dirPin, LOW);
   for(int x = 0; x < stepsLeft; x++)
@@ -135,4 +139,5 @@ void variklis(int stepsLeft, int stepsRight)
     digitalWrite(stepPin, LOW);
     delayMicroseconds(1000);
   }
+  digitalWrite(sleepPin, LOW);
   }
