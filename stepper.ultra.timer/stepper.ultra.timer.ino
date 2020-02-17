@@ -24,7 +24,7 @@ long t; //garso signalo sugaistas laikas
 int ats; //atstumas
 int proc; //atstumas procentais
 float x;
-
+int skait;
 //Blynk atpazinimo kodas
 char auth[] = "hKeENDdhyYgTWMNzOvLqoNfpO2tLg5oR";
 //Wifi duomenys
@@ -67,16 +67,38 @@ void setup()
   display.clearDisplay();
   display.setTextColor(WHITE);
 //funkciju laikmaciai
-  timer.setInterval(1000L, ultragarsasBlynk); 
+  timer.setInterval(10000L, ultragarsasBlynk); 
   timer.setInterval(5000L, clockvalue); 
+//  timer.setInterval(1000L, Blynk.syncVirtual(V4));
+  
   digitalWrite(sleepPin, LOW);
+ 
 }
-
+//ultragarso siunciamas kintamasis i blynk
 void ultragarsasBlynk()
 {
   ultragarsas();
   Blynk.virtualWrite(V1, proc);
 }
+
+
+BLYNK_WRITE(V4)
+{
+  skait = param.asInt();
+  }
+
+  
+BLYNK_WRITE(V3)
+{
+  
+    if (param.asInt())//tikrinama ar laikas sutampa su nustatytu laiku
+    {
+      
+        variklis(300,100);
+   
+    }
+}
+
 
 //tikrinama ar mygtuko aplikacijoje paspaudimas = true ir paleidziama variklio funkcija
 BLYNK_WRITE(V0)
@@ -94,6 +116,7 @@ BLYNK_WRITE(V0)
   timer.run(); 
 }
 //---------------------------------------------------
+//laikrodis
 void clockvalue()
 {
  int gmthour = hour();
