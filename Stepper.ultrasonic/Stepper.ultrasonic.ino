@@ -5,8 +5,8 @@
 #include <WiFi.h>
 #include <WiFiClient.h>
 #include <BlynkSimpleEsp32.h>
-//#include <TimeLib.h>
-//#include <WidgetRTC.h>
+#include <TimeLib.h>
+#include <WidgetRTC.h>
 
 #define SCREEN_WIDTH 128 // OLED plotis pikseliais
 #define SCREEN_HEIGHT 64 // OLED aukstis pikseliais
@@ -14,12 +14,12 @@
 
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
-BlynkTimer timer;
 const int dirPin = 16; //Variklio krypties
 const int stepPin = 17; //Variklio zingsnio
 const int trigPin = 4; //Ultragarso trig 
 const int echoPin = 5; //Ultragarso echo
 const int sleepPin = 3; // miego rezimo 
+int isFirstConnect = true;
 long t; //garso signalo sugaistas laikas
 int ats; //atstumas
 int proc; //atstumas procentais
@@ -27,55 +27,61 @@ float x;
 
 //Blynk atpazinimo kodas
 char auth[] = "hKeENDdhyYgTWMNzOvLqoNfpO2tLg5oR";
-
 //Wifi duomenys
 char ssid[] = "Tado apartamentai";
 char pass[] = "tadas111";
 
-//SimpleTimer timer;
+BlynkTimer timer;
+WidgetRTC rtc;
 
-//WidgetRTC rtc;
-
-//-----------------------------------------------------------------------------
+BLYNK_CONNECTED() 
+{
+if (isFirstConnect) 
+{
+Blynk.syncAll();
+isFirstConnect = false;
+}
+}
 
 void setup()
 {
   Serial.begin(9600);
+  
   pinMode(stepPin, OUTPUT);
   pinMode(dirPin, OUTPUT);
   pinMode(trigPin, OUTPUT);
   pinMode(sleepPin, OUTPUT);
   pinMode(echoPin, INPUT);
+//inicijuojamas Blynk 
   Blynk.begin(auth, ssid, pass);
-  
+  while(Blynk.connect() == false);
+//real-time-clock pradzia 
+  rtc.begin();
+//nustatomi oled parametrai
   if(!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) { // adresas 0x3C kur OLED
     Serial.println(F("SSD1306 allocation failed"));
     for(;;); // Don't proceed, loop forever
   }
-  
   delay(1000);
   display.setFont();
   display.clearDisplay();
   display.setTextColor(WHITE);
-  timer.setInterval(1000L, ultragarsasBlynk);
+//funkciju laikmaciai
+  timer.setInterval(1000L, ultragarsasBlynk); 
+  timer.setInterval(5000L, clockvalue); 
   digitalWrite(sleepPin, LOW);
 }
+
 void ultragarsasBlynk()
 {
   ultragarsas();
-  Blynk.virtualWrite(V5, proc);
+  Blynk.virtualWrite(V1, proc);
 }
 
 //tikrinama ar mygtuko aplikacijoje paspaudimas = true ir paleidziama variklio funkcija
 BLYNK_WRITE(V0)
 {
   if(param.asInt() == 1) {
-    variklis(300, 100);
-  }
-}
-BLYNK_WRITE(V1)
-{
-  if(param.asInt()) {
     variklis(300, 100);
   }
 }
@@ -88,6 +94,26 @@ BLYNK_WRITE(V1)
   timer.run(); 
 }
 //---------------------------------------------------
+void clockvalue()
+{
+ int gmthour = hour();
+  if (gmthour == 24){
+     gmthour = 0;
+  }
+  String displayhour =   String(gmthour, DEC);
+  int hourdigits = displayhour.length();
+  if(hourdigits == 1){
+    displayhour = "0" + displayhour;
+  }
+  String displayminute = String(minute(), DEC);
+  int minutedigits = displayminute.length();  
+  if(minutedigits == 1){
+    displayminute = "0" + displayminute;
+  }  
+  String displaycurrenttime = displayhour + ":" + displayminute;
+  Blynk.virtualWrite(V2, displaycurrenttime);
+
+}
 void oled()
 {
   display.setTextSize(2); //nustatomas teksto dydis
