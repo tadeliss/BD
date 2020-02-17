@@ -5,6 +5,8 @@
 #include <WiFi.h>
 #include <WiFiClient.h>
 #include <BlynkSimpleEsp32.h>
+//#include <TimeLib.h>
+//#include <WidgetRTC.h>
 
 #define SCREEN_WIDTH 128 // OLED plotis pikseliais
 #define SCREEN_HEIGHT 64 // OLED aukstis pikseliais
@@ -30,6 +32,9 @@ char auth[] = "hKeENDdhyYgTWMNzOvLqoNfpO2tLg5oR";
 char ssid[] = "Tado apartamentai";
 char pass[] = "tadas111";
 
+//SimpleTimer timer;
+
+//WidgetRTC rtc;
 
 //-----------------------------------------------------------------------------
 
@@ -65,14 +70,19 @@ void ultragarsasBlynk()
 BLYNK_WRITE(V0)
 {
   if(param.asInt() == 1) {
-    variklis(500, 100);
+    variklis(300, 100);
+  }
+}
+BLYNK_WRITE(V1)
+{
+  if(param.asInt()) {
+    variklis(300, 100);
   }
 }
 
 //---------------------------------------------------
   void loop()
 {
-  //ultragarsas();
   oled();
   Blynk.run();
   timer.run(); 
@@ -81,7 +91,7 @@ BLYNK_WRITE(V0)
 void oled()
 {
   display.setTextSize(2); //nustatomas teksto dydis
-  display.setCursor(0,30); // nustatomas pradzios taskas
+  display.setCursor(0,0); // nustatomas pradzios taskas
   delay(100);
   display.print(proc); //isvedimas i oled
   display.print(" %"); 
@@ -98,10 +108,10 @@ int ultragarsas()
   digitalWrite(trigPin, HIGH);
   delayMicroseconds(10);
   digitalWrite(trigPin, LOW);
-  
+ 
   t = pulseIn(echoPin, HIGH); // laiko paskaiciavimas uztrukto garsui atkeliauti
   ats = t*0.0344/2; //atstumo paskaiciavimas pagal sugaista laika
-  
+
 //skaiciavimas procentais 
   x =(((ats+2.5)*100)/15)-50;
   
@@ -114,6 +124,7 @@ int ultragarsas()
   }
   return proc;
   }
+
 
 //Variklio pasukimo funkcija
 void variklis(int stepsLeft, int stepsRight)
@@ -132,6 +143,24 @@ void variklis(int stepsLeft, int stepsRight)
   
 //Pasukamas i kita puse 
   digitalWrite(dirPin, HIGH);
+  for(int x = 0; x < stepsRight; x++)
+  {
+    digitalWrite(stepPin, HIGH);
+    delayMicroseconds(1000);
+    digitalWrite(stepPin, LOW);
+    delayMicroseconds(1000);
+  }
+
+   digitalWrite(dirPin, LOW);
+  for(int x = 0; x < stepsLeft; x++)
+  {
+    digitalWrite(stepPin, HIGH);
+    delayMicroseconds(2000);
+    digitalWrite(stepPin, LOW);
+    delayMicroseconds(2000);
+  }
+  
+   digitalWrite(dirPin, HIGH);
   for(int x = 0; x < stepsRight; x++)
   {
     digitalWrite(stepPin, HIGH);
