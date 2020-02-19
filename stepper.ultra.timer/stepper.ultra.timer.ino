@@ -23,8 +23,7 @@ int isFirstConnect = true;
 long t; //garso signalo sugaistas laikas
 int ats; //atstumas
 int proc; //atstumas procentais
-float x;
-int skait;
+int kiek;
 //Blynk atpazinimo kodas
 char auth[] = "hKeENDdhyYgTWMNzOvLqoNfpO2tLg5oR";
 //Wifi duomenys
@@ -34,17 +33,14 @@ char pass[] = "tadas111";
 BlynkTimer timer;
 WidgetRTC rtc;
 
-BLYNK_CONNECTED() 
-{
-if (isFirstConnect) 
-{
-Blynk.syncAll();
-isFirstConnect = false;
-}
+BLYNK_CONNECTED(){
+  if(isFirstConnect){
+    Blynk.syncAll();
+    isFirstConnect = false;
+ }
 }
 
-void setup()
-{
+void setup(){
   Serial.begin(9600);
   
   pinMode(stepPin, OUTPUT);
@@ -52,13 +48,16 @@ void setup()
   pinMode(trigPin, OUTPUT);
   pinMode(sleepPin, OUTPUT);
   pinMode(echoPin, INPUT);
+  
 //inicijuojamas Blynk 
   Blynk.begin(auth, ssid, pass);
   while(Blynk.connect() == false);
+  
 //real-time-clock pradzia 
   rtc.begin();
+  
 //nustatomi oled parametrai
-  if(!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) { // adresas 0x3C kur OLED
+  if(!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)){ // adresas 0x3C kur OLED
     Serial.println(F("SSD1306 allocation failed"));
     for(;;); // Don't proceed, loop forever
   }
@@ -66,56 +65,53 @@ void setup()
   display.setFont();
   display.clearDisplay();
   display.setTextColor(WHITE);
+  
 //funkciju laikmaciai
   timer.setInterval(10000L, ultragarsasBlynk); 
   timer.setInterval(5000L, clockvalue); 
 //  timer.setInterval(1000L, Blynk.syncVirtual(V4));
   
-  digitalWrite(sleepPin, LOW);
- 
+  digitalWrite(sleepPin, LOW); //uzmigdomas variklis
 }
+
 //ultragarso siunciamas kintamasis i blynk
-void ultragarsasBlynk()
-{
+void ultragarsasBlynk(){
   ultragarsas();
   Blynk.virtualWrite(V1, proc);
 }
 
-
-BLYNK_WRITE(V4)
-{
-  skait = param.asInt();
-  }
-
-  
-BLYNK_WRITE(V3)
-{
-  
-    if (param.asInt())//tikrinama ar laikas sutampa su nustatytu laiku
-    {
-      
-        variklis(300,100);
-   
-    }
+//kiek kartu pasukti varikli
+BLYNK_WRITE(V4){
+  kiek = param.asInt();
 }
 
+//nustatytam laikui atejus pasukamas variklis
+BLYNK_WRITE(V5){
+  long TimeSec = param[0].asLong();
+  int val = hour();
+  int minut = minute();
+  long laikSec = val*3600+minut*60;
+  if(TimeSec==laikSec){
+    for(int x; x<=kiek; x++){
+      variklis(300, 100);
+  }
+ }
+}
 
-//tikrinama ar mygtuko aplikacijoje paspaudimas = true ir paleidziama variklio funkcija
-BLYNK_WRITE(V0)
-{
-  if(param.asInt() == 1) {
+//paspaudus mygtuka pasukamas variklis
+BLYNK_WRITE(V0){
+  if(param.asInt() == 1){
     variklis(300, 100);
   }
 }
 
-//---------------------------------------------------
-  void loop()
-{
+
+void loop(){
   oled();
   Blynk.run();
   timer.run(); 
 }
-//---------------------------------------------------
+
 //laikrodis
 void clockvalue()
 {
@@ -162,28 +158,26 @@ int ultragarsas()
   ats = t*0.0344/2; //atstumo paskaiciavimas pagal sugaista laika
 
 //skaiciavimas procentais 
-  x =(((ats+2.5)*100)/15)-50;
+float x =(((ats+2.5)*100)/15)-50;
   
-  if(ats <= 5) {
+  if(ats <= 5){
     proc = 100;
-  } else if (ats>=20) {
+  } else if(ats>=20){
     proc = 0;
   } else{
     proc = 100 - x;
   }
   return proc;
-  }
+}
 
 
 //Variklio pasukimo funkcija
-void variklis(int stepsLeft, int stepsRight)
-{
+void variklis(int stepsLeft, int stepsRight){
   digitalWrite(sleepPin, HIGH);
   delay(10);
 //Pasukamas i viena puse
   digitalWrite(dirPin, LOW);
-  for(int x = 0; x < stepsLeft; x++)
-  {
+  for(int x = 0; x < stepsLeft; x++){
     digitalWrite(stepPin, HIGH);
     delayMicroseconds(2000);
     digitalWrite(stepPin, LOW);
@@ -192,8 +186,7 @@ void variklis(int stepsLeft, int stepsRight)
   
 //Pasukamas i kita puse 
   digitalWrite(dirPin, HIGH);
-  for(int x = 0; x < stepsRight; x++)
-  {
+  for(int x = 0; x < stepsRight; x++){
     digitalWrite(stepPin, HIGH);
     delayMicroseconds(1000);
     digitalWrite(stepPin, LOW);
@@ -201,8 +194,7 @@ void variklis(int stepsLeft, int stepsRight)
   }
 
    digitalWrite(dirPin, LOW);
-  for(int x = 0; x < stepsLeft; x++)
-  {
+  for(int x = 0; x < stepsLeft; x++){
     digitalWrite(stepPin, HIGH);
     delayMicroseconds(2000);
     digitalWrite(stepPin, LOW);
@@ -210,12 +202,11 @@ void variklis(int stepsLeft, int stepsRight)
   }
   
    digitalWrite(dirPin, HIGH);
-  for(int x = 0; x < stepsRight; x++)
-  {
+  for(int x = 0; x < stepsRight; x++){
     digitalWrite(stepPin, HIGH);
     delayMicroseconds(1000);
     digitalWrite(stepPin, LOW);
     delayMicroseconds(1000);
   }
   digitalWrite(sleepPin, LOW);
-  }
+}
