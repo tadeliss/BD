@@ -47,12 +47,15 @@ BLYNK_WRITE(V5){
  int minut = minute();
  long laikSec = val*3600+minut*60;
 if(TimeSec==laikSec){
-  Serial.println("achujenai");
-}
+  for(int x; x<=skait; x++){
+    variklis();
+  }
+ }
 }
 
 void sync(){
-   Blynk.syncVirtual(V5);
+  Blynk.syncVirtual(V4)
+  Blynk.syncVirtual(V5);
 }
 
 void loop() {

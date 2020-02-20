@@ -23,7 +23,8 @@ int isFirstConnect = true;
 long t; //garso signalo sugaistas laikas
 int ats; //atstumas
 int proc; //atstumas procentais
-int kiek;
+int kiek1, kiek2;
+int i = 0;
 //Blynk atpazinimo kodas
 char auth[] = "hKeENDdhyYgTWMNzOvLqoNfpO2tLg5oR";
 //Wifi duomenys
@@ -33,6 +34,7 @@ char pass[] = "tadas111";
 BlynkTimer timer;
 WidgetRTC rtc;
 
+//tikrinama ar prisijungta i blynk serveri, prisijungus sinchronizuojami duomenys
 BLYNK_CONNECTED(){
   if(isFirstConnect){
     Blynk.syncAll();
@@ -67,35 +69,23 @@ void setup(){
   display.setTextColor(WHITE);
   
 //funkciju laikmaciai
+  timer.setInterval(59000L, synckiek);
+  timer.setInterval(90000L, synci);
   timer.setInterval(10000L, ultragarsasBlynk); 
   timer.setInterval(5000L, clockvalue); 
-//  timer.setInterval(1000L, Blynk.syncVirtual(V4));
   
-  digitalWrite(sleepPin, LOW); //uzmigdomas variklis
+  //uzmigdomas variklis
+  digitalWrite(sleepPin, LOW);
 }
 
-//ultragarso siunciamas kintamasis i blynk
-void ultragarsasBlynk(){
-  ultragarsas();
-  Blynk.virtualWrite(V1, proc);
-}
-
-//kiek kartu pasukti varikli
+//kiek kartu pasukti varikli(1)
 BLYNK_WRITE(V4){
-  kiek = param.asInt();
+  kiek1 = param.asInt();
 }
 
-//nustatytam laikui atejus pasukamas variklis
-BLYNK_WRITE(V5){
-  long TimeSec = param[0].asLong();
-  int val = hour();
-  int minut = minute();
-  long laikSec = val*3600+minut*60;
-  if(TimeSec==laikSec){
-    for(int x; x<=kiek; x++){
-      variklis(300, 100);
-  }
- }
+//kiek kartu pasukti varikli(2)
+BLYNK_WRITE(V6){
+  kiek2 = param.asInt();
 }
 
 //paspaudus mygtuka pasukamas variklis
@@ -105,6 +95,66 @@ BLYNK_WRITE(V0){
   }
 }
 
+//nustatytam laikui atejus pasukamas variklis (1 laikmatis)
+BLYNK_WRITE(V3){
+  
+  Blynk.syncVirtual(V4);
+  
+  long TimeSec = param[0].asLong();
+  int val = hour();
+  int minut = minute();
+  long laikSec = val*3600+minut*60;
+  
+  if(TimeSec == laikSec && i == 0){
+    i=i+1;
+   
+    for(int x=0; x<kiek1; x++){
+      
+      variklis(300, 100);
+      
+      delay(500);
+  }
+ }
+}
+
+//nustatytam laikui atejus pasukamas variklis (2 laikmatis)
+BLYNK_WRITE(V5){
+  
+  Blynk.syncVirtual(V6);
+  
+  long TimeSec = param[0].asLong();
+  int val = hour();
+  int minut = minute();
+  long laikSec = val*3600+minut*60;
+ 
+  if(TimeSec == laikSec && i == 0){
+    i=i+1;
+   
+    for(int x=0; x<kiek2; x++){
+      
+      variklis(300, 100);
+      
+      delay(500);
+  }
+ }
+}
+
+//atnaujina kiek ir laikmacio reiksmes, atlieka palyginima
+void synckiek(){
+  Blynk.syncVirtual(V3);
+  Blynk.syncVirtual(V5);   
+}
+
+//atnaujina i reiksme
+void synci(){
+  i=0;
+}
+
+//ultragarso siunciamas kintamasis i blynk
+void ultragarsasBlynk(){
+  ultragarsas();
+  Blynk.virtualWrite(V1, proc);
+}
 
 void loop(){
   oled();
@@ -112,7 +162,7 @@ void loop(){
   timer.run(); 
 }
 
-//laikrodis
+//laikrodzio funkcija
 void clockvalue()
 {
  int gmthour = hour();
@@ -131,8 +181,9 @@ void clockvalue()
   }  
   String displaycurrenttime = displayhour + ":" + displayminute;
   Blynk.virtualWrite(V2, displaycurrenttime);
-
 }
+
+//Isvedimas i oled
 void oled()
 {
   display.setTextSize(2); //nustatomas teksto dydis
@@ -173,8 +224,11 @@ float x =(((ats+2.5)*100)/15)-50;
 
 //Variklio pasukimo funkcija
 void variklis(int stepsLeft, int stepsRight){
+
+//prikeliamas variklis
   digitalWrite(sleepPin, HIGH);
   delay(10);
+  
 //Pasukamas i viena puse
   digitalWrite(dirPin, LOW);
   for(int x = 0; x < stepsLeft; x++){
@@ -193,6 +247,7 @@ void variklis(int stepsLeft, int stepsRight){
     delayMicroseconds(1000);
   }
 
+//Pasukamas i viena puse
    digitalWrite(dirPin, LOW);
   for(int x = 0; x < stepsLeft; x++){
     digitalWrite(stepPin, HIGH);
@@ -200,7 +255,8 @@ void variklis(int stepsLeft, int stepsRight){
     digitalWrite(stepPin, LOW);
     delayMicroseconds(2000);
   }
-  
+
+//Pasukamas i kita puse
    digitalWrite(dirPin, HIGH);
   for(int x = 0; x < stepsRight; x++){
     digitalWrite(stepPin, HIGH);
@@ -208,5 +264,7 @@ void variklis(int stepsLeft, int stepsRight){
     digitalWrite(stepPin, LOW);
     delayMicroseconds(1000);
   }
+
+  //uzmigdomas variklis
   digitalWrite(sleepPin, LOW);
 }
