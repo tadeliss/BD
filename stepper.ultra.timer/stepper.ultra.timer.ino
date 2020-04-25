@@ -17,7 +17,7 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 const int dirPin = 16; //Variklio krypties
 const int stepPin = 17; //Variklio zingsnio
 const int trigPin = 4; //Ultragarso trig 
-const int echoPin = 5; //Ultragarso echo
+const int echoPin = 2; //Ultragarso echo
 const int sleepPin = 3; // miego rezimo 
 int isFirstConnect = true;
 long t; //garso signalo sugaistas laikas
