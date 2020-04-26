@@ -1,9 +1,8 @@
 #include "HX711.h" 
-const int motorPin = 25;
 float x;
-#define DOUT  16
-#define CLK  17
- 
+#define DOUT  18
+#define CLK  19
+const int  motorPin = 25;
 HX711 scale(DOUT, CLK);
  
 
@@ -17,9 +16,7 @@ void setup() {
   scale.set_scale();
   scale.tare(); 
  
-  long zero_factor = scale.read_average(); 
-    
-Serial.println(zero_factor);
+  
 }
  
 
@@ -30,9 +27,8 @@ void loop() {
   x= scale.get_units();
   if (x<0.1){
    digitalWrite(motorPin, HIGH);
-  }else {
+   delay(4000);
    digitalWrite(motorPin,LOW);
-   }
-   
+  }
   delay(2000);
 }

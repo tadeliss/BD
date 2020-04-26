@@ -7,26 +7,42 @@
 #include <BlynkSimpleEsp32.h>
 #include <TimeLib.h>
 #include <WidgetRTC.h>
+#include "HX711.h"
 
+//oled nustatymai
 #define SCREEN_WIDTH 128 // OLED plotis pikseliais
 #define SCREEN_HEIGHT 64 // OLED aukstis pikseliais
 #define OLED_RESET     4 // reset
 
+
+
+
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
+//isvadu nustatymas
+const int CLK = 19; //svarstykliu SCK
+const int DOUT = 18; //svarstykliu DT
 const int dirPin = 16; //Variklio krypties
 const int stepPin = 17; //Variklio zingsnio
 const int trigPin = 4; //Ultragarso trig 
 const int echoPin = 2; //Ultragarso echo
 const int sleepPin = 3; // miego rezimo 
-int isFirstConnect = true;
-long t; //garso signalo sugaistas laikas
-int ats; //atstumas
-int proc; //atstumas procentais
+const int  vandensPin = 25; //vandens siurblio
+
+float calibration_factor = -425650;  //nustatomas kalibracijos svarstyklrėms skaičius
+long t; //garso signalo sugaistas laikas ultragarso funkcijoje
+int ats; //atstumas ultragarso funkcijoje
+int proc; //atstumas procentais ultragarso funkcijoje
 int kiek1, kiek2;
 int i = 0;
+int isFirstConnect = true;
+float svoris; //svarstykliu duomenu kintamasis
+
+HX711 scale(DOUT, CLK);
+
 //Blynk atpazinimo kodas
 char auth[] = "hKeENDdhyYgTWMNzOvLqoNfpO2tLg5oR";
+
 //Wifi duomenys
 char ssid[] = "Tado apartamentai";
 char pass[] = "tadas111";
@@ -44,7 +60,7 @@ BLYNK_CONNECTED(){
 
 void setup(){
   Serial.begin(9600);
-  
+  pinMode(vandensPin, OUTPUT);
   pinMode(stepPin, OUTPUT);
   pinMode(dirPin, OUTPUT);
   pinMode(trigPin, OUTPUT);
@@ -68,11 +84,16 @@ void setup(){
   display.clearDisplay();
   display.setTextColor(WHITE);
   
+//svarstyklės
+scale.set_scale();
+scale.tare();
+    
 //funkciju laikmaciai
   timer.setInterval(59000L, synckiek);
   timer.setInterval(90000L, synci);
   timer.setInterval(10000L, ultragarsasBlynk); 
-  timer.setInterval(5000L, clockvalue); 
+  timer.setInterval(5000L, clockvalue);
+  timer.setInterval(15000L, syncvand); 
   
   //uzmigdomas variklis
   digitalWrite(sleepPin, LOW);
@@ -94,7 +115,18 @@ BLYNK_WRITE(V0){
     variklis(300, 100);
   }
 }
-
+// tikrinama ar ijungtas vandens tiekimo mygtukas
+BLYNK_WRITE(V7){
+  if(param.asInt() == 1){
+     scale.set_scale(calibration_factor); 
+      svoris = scale.get_units();
+       if (svoris < 0.1){
+   digitalWrite(vandensPin, HIGH);
+   delay(6000);
+   digitalWrite(vandensPin,LOW);
+  }
+  }
+}
 //nustatytam laikui atejus pasukamas variklis (1 laikmatis)
 BLYNK_WRITE(V3){
   
@@ -137,6 +169,11 @@ BLYNK_WRITE(V5){
       delay(500);
   }
  }
+}
+
+//atnaujina vandens mygtuko reiksme
+void syncvand(){
+  Blynk.syncVirtual(V7);
 }
 
 //atnaujina kiek ir laikmacio reiksmes, atlieka palyginima
