@@ -15,8 +15,8 @@
  
 #include "HX711.h"  //You must have this library in your arduino library folder
  
-#define DOUT  16
-#define CLK  17
+#define DOUT  18
+#define CLK  19
  
 HX711 scale(DOUT, CLK);
  
