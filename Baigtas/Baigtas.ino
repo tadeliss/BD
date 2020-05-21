@@ -7,7 +7,8 @@
   v4 - 1 kiekis
   v5 - 2 laikmatis
   v6 - 2 kiekis
-  v7 - siurblio valdymo mygtukas
+  v7 - siurblio valdymo jungiklis
+  
   */
 
 #define BLYNK_PRINT Serial
@@ -41,7 +42,7 @@ const int echoPin = 2; //Ultragarso echo
 const int sleepPin = 3; // miego rezimo
 const int  vandensPin = 25; //vandens siurblio
 
-float calibration_factor = -425650;  //nustatomas kalibracijos svarstyklėms skaičius
+float calibration_factor = -424650;  //nustatomas kalibracijos svarstyklėms skaičius
 long t; //garso signalo sugaistas laikas ultragarso funkcijoje
 int ats; //atstumas ultragarso funkcijoje
 int proc; //atstumas procentais ultragarso funkcijoje
@@ -49,7 +50,8 @@ int kiek1, kiek2;
 int i = 0;
 int isFirstConnect = true;
 float svoris; //svarstykliu duomenu kintamasis
-
+int valand;
+int minut;
 HX711 scale(DOUT, CLK);
 
 //Blynk atpazinimo kodas
@@ -93,7 +95,7 @@ void setup() {
   //nustatomi oled parametrai
   if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) { // adresas 0x3C kur OLED
     Serial.println(F("SSD1306 allocation failed"));
-    for (;;); // Don't proceed, loop forever
+    for (;;); // jei nepavyko prijungti oled, netesiama
   }
   delay(1000);
   display.setFont();
@@ -109,11 +111,13 @@ void setup() {
   timer.setInterval(90000L, synci);
   timer.setInterval(100000L, ultragarsasBlynk);
   timer.setInterval(5000L, clockvalue);
-  timer.setInterval(10000L, syncvand);
+  timer.setInterval(15000L, syncvand);
   timer.setInterval(105000L, oled);
 
-  //uzmigdomas variklis
-
+//  
+ultragarsas();
+delay(100);
+oled();
 }
 
 //kiek kartu pasukti varikli(1)
@@ -128,21 +132,35 @@ BLYNK_WRITE(V6) {
 
 //paspaudus mygtuka pasukamas variklis
 BLYNK_WRITE(V0) {
-  oledmait();
+
   if (param.asInt() == 1) {
+    oledmait();
+    delay(500);
     variklis(300, 100);
   }
+  valand = hour();
+  minut = minute();
+ oled(); 
 }
 // tikrinama ar ijungtas vandens tiekimo mygtukas
 BLYNK_WRITE(V7) {
   if (param.asInt() == 1) {
     scale.set_scale(calibration_factor);
     svoris = scale.get_units();
-    if (svoris < 0.1) {
+     
+  delay (100);
+    if (svoris < 0.150) {
+      pinMode(echoPin, OUTPUT);
+      delay(100);
+      oledvand();
+      
       digitalWrite(vandensPin, HIGH);
-      delay(6000);
+      delay(4000);
       digitalWrite(vandensPin, LOW);
+      delay(100);
+      pinMode(echoPin, INPUT);
     }
+    oled();
   }
 }
 //nustatytam laikui atejus pasukamas variklis (1 laikmatis)
@@ -164,6 +182,9 @@ BLYNK_WRITE(V3) {
 
       delay(500);
     }
+  valand = hour();
+  minut = minute();
+    oled();
   }
 }
 
@@ -186,6 +207,9 @@ BLYNK_WRITE(V5) {
 
       delay(500);
     }
+  valand = hour();
+  minut = minute();
+    oled();
   }
 }
 
@@ -241,12 +265,16 @@ void clockvalue()
 void oled()
 {
   display.clearDisplay(); // isvalomas oled
-
-  display.setTextSize(5); //nustatomas teksto dydis
-  display.setCursor(0, 20); // nustatomas pradzios taskas
+  display.setTextSize(2); //nustatomas teksto dydis
+  display.setCursor(0,0); // nustatomas pradzios taskas
   delay(100);
   display.print(proc); //isvedimas i oled
   display.print("%");
+  display.setTextSize(3);
+  display.setCursor(0,20);
+  display.print(valand);
+  display.print(":");
+  display.print(minut);
   display.display();
   delay(100);
 
@@ -264,6 +292,19 @@ void oledmait() {
 
 }
 
+void oledvand() {
+  display.clearDisplay(); // isvalomas oled
+
+  display.setTextSize(2); //nustatomas teksto dydis
+  display.setCursor(0, 0); // nustatomas pradzios taskas
+  delay(100);
+  display.print ("Pilamas");
+  display.println ("   Vanduo");
+  display.display();
+  delay(100);
+
+}
+
 int ultragarsas()
 {
   digitalWrite(trigPin, LOW);
@@ -276,11 +317,11 @@ int ultragarsas()
   ats = t * 0.0344 / 2; //atstumo paskaiciavimas pagal sugaista laika
 
   //skaiciavimas procentais
-  float x = (((ats + 2.5) * 100) / 15) - 50;
+  float x = (((ats + 1) * 100) / 10) - 30;
 
-  if (ats <= 5) {
+  if (ats <= 2) {
     proc = 100;
-  } else if (ats >= 20) {
+  } else if (ats >= 12) {
     proc = 0;
   } else {
     proc = 100 - x;
@@ -298,7 +339,7 @@ void variklis(int stepsLeft, int stepsRight) {
   delay(10);
 
   //Pasukamas i viena puse
-  digitalWrite(dirPin, LOW);
+  digitalWrite(dirPin, HIGH);
   for (int x = 0; x < stepsLeft; x++) {
     digitalWrite(stepPin, HIGH);
     delayMicroseconds(2000);
@@ -307,7 +348,7 @@ void variklis(int stepsLeft, int stepsRight) {
   }
 
   //Pasukamas i kita puse
-  digitalWrite(dirPin, HIGH);
+  digitalWrite(dirPin, LOW);
   for (int x = 0; x < stepsRight; x++) {
     digitalWrite(stepPin, HIGH);
     delayMicroseconds(1000);
@@ -316,7 +357,7 @@ void variklis(int stepsLeft, int stepsRight) {
   }
 
   //Pasukamas i viena puse
-  digitalWrite(dirPin, LOW);
+  digitalWrite(dirPin, HIGH);
   for (int x = 0; x < stepsLeft; x++) {
     digitalWrite(stepPin, HIGH);
     delayMicroseconds(2000);
@@ -325,7 +366,7 @@ void variklis(int stepsLeft, int stepsRight) {
   }
 
   //Pasukamas i kita puse
-  digitalWrite(dirPin, HIGH);
+  digitalWrite(dirPin, LOW);
   for (int x = 0; x < stepsRight; x++) {
     digitalWrite(stepPin, HIGH);
     delayMicroseconds(1000);
