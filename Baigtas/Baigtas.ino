@@ -27,9 +27,6 @@
 #define SCREEN_HEIGHT 64 // OLED aukstis pikseliais
 #define OLED_RESET     4 // reset
 
-
-
-
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
 //isvadu nustatymas
@@ -110,7 +107,7 @@ void setup() {
   timer.setInterval(59000L, synckiek);
   timer.setInterval(90000L, synci);
   timer.setInterval(100000L, ultragarsasBlynk);
-  timer.setInterval(5000L, clockvalue);
+  timer.setInterval(5000L, laikas);
   timer.setInterval(15000L, syncvand);
   timer.setInterval(105000L, oled);
 
@@ -241,7 +238,7 @@ void loop() {
 }
 
 //laikrodzio funkcija
-void clockvalue()
+void laikas()
 {
   int gmthour = hour();
   if (gmthour == 24) {
